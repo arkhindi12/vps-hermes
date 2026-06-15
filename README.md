@@ -1,101 +1,120 @@
-# Hermes Agent — Skills, Memories & Config Backup
+# 🤖 Hermes Agent — Skills, Memories & Config Backup
 
-Backup otomatis skills, memories, dan config Hermes Agent ke GitHub.
+> Ini adalah backup otomatis dari **Hermes Agent** yang berjalan di VPS `web.arzastore.com`.
+> Berisi koleksi skills, memories (preferensi user), dan config yang dibangun selama penggunaan.
+
+Hermes Agent adalah AI assistant berbasis LLM yang berjalan lokal di server, bisa dihubungkan ke Telegram, menjalankan perintah terminal, mengelola file, backup otomatis, dan banyak lagi.
+
+---
+
+## 📦 Isi Repo Ini
+
+Setiap backup berisi:
+
+| File | Keterangan |
+|---|---|
+| `extra-0-skills.tar.gz` | Semua skill (SKILL.md) — cara Hermes mengerjakan tugas-tugas spesifik |
+| `extra-1-memories.tar.gz` | Memories — preferensi user, konteks lingkungan, fakta penting |
+| `extra-2-scripts.tar.gz` | Custom scripts yang dipanggil oleh skill/cron |
+| `app.tar.gz` | Full `~/.hermes/` directory (config, cron, plugins) |
+
+Skills mencakup:
+- **VPS ops** — deploy, backup, nginx, SSL, docker, PM2
+- **AI tools** — vLLM, llama.cpp, DSPy, HuggingFace
+- **Hermes config** — setup provider, gateway Telegram, failover
+- **Dev workflows** — TDD, code review, debugging, planning
+- **Media** — YouTube download, ClipSense, audio/video processing
+- **Dan 50+ skill lainnya**
 
 ---
 
 ## 🚨 Emergency Restore ke Server Baru
 
-### 1. Install Hermes Agent
+Ketika VPS mati total, semua file hilang, atau pindah server:
+
+### Step 1 — Install Hermes Agent
 ```bash
 pip install hermes-agent
-# atau
-curl -sSL https://hermes-agent.nousresearch.com/install.sh | bash
+# atau ikuti docs: https://hermes-agent.nousresearch.com/docs
 ```
 
-### 2. Clone backup ini
+### Step 2 — Clone backup ini
 ```bash
 git clone https://GITHUB_TOKEN@github.com/arkhindi12/vps-hermes.git /tmp/hermes-restore
 cd /tmp/hermes-restore
 ```
 
-### 3. Extract backup terbaru
+### Step 3 — Extract backup terbaru
 ```bash
-# Cari file terbaru
-ls -t backup-*.tar.gz | head -1
+# Lihat file terbaru
+ls -t backup-*.tar.gz | head -3
 
-# Extract
+# Extract (ganti nama file sesuai yang terbaru)
 tar xzf backup-YYYY-MM-DD-HH-MM-SS.tar.gz
 cd harnet-backup-hermes-*/
 ```
 
-### 4. Restore skills
+### Step 4 — Restore skills
 ```bash
-# Backup dulu skills yang ada (kalau ada)
-cp -r ~/.hermes/skills ~/.hermes/skills.bak 2>/dev/null
-
-# Restore dari backup
+mkdir -p ~/.hermes/skills
 tar xzf extra-0-skills.tar.gz -C ~/.hermes/
+echo "✅ Skills restored"
 ```
 
-### 5. Restore memories
+### Step 5 — Restore memories
 ```bash
 tar xzf extra-1-memories.tar.gz -C ~/.hermes/
+echo "✅ Memories restored"
 ```
 
-### 6. Restore scripts (optional)
+### Step 6 — Restore scripts (optional)
 ```bash
-tar xzf extra-2-scripts.tar.gz -C ~/.hermes/ 2>/dev/null || true
+tar xzf extra-2-scripts.tar.gz -C ~/.hermes/ 2>/dev/null && echo "✅ Scripts restored"
 ```
 
-### 7. Restore config (optional)
+### Step 7 — Restore config
 ```bash
-# Config ada di app.tar.gz (root ~/.hermes dir)
-tar xzf app.tar.gz -C ~/.hermes/ --wildcards '*.yaml' '*.json' 2>/dev/null || true
+# Extract config files saja dari app.tar.gz
+tar xzf app.tar.gz -C ~/.hermes/ --wildcards 'config.yaml' '*.json' 2>/dev/null || true
 ```
 
-### 8. Restart Hermes
+### Step 8 — Restart Hermes
 ```bash
-# CLI
-hermes restart
-
-# atau PM2 (jika dijalankan via PM2)
 pm2 restart hermes
+# atau
+hermes --profile default
 ```
 
 ---
 
 ## ⏰ Auto-backup Schedule
 
-Backup dijadwalkan **tiap hari jam 02:00** via Harnet Panel.
+Backup berjalan **otomatis setiap hari jam 02:00** via Harnet Panel (`web.arzastore.com/backup`).
 
-Yang di-backup:
-| Item | Path |
-|---|---|
-| Skills (SKILL.md files) | `~/.hermes/skills/` |
-| Memories | `~/.hermes/memories/MEMORY.md`, `USER.md` |
-| Scripts | `~/.hermes/scripts/` |
-| Full .hermes dir | `~/.hermes/` (app.tar.gz) |
+- Max 5 backup tersimpan (otomatis hapus yang lama)
+- Push ke repo ini via GitHub API
 
 ---
 
-## 📋 Isi Backup
+## 🔗 Ekosistem VPS
 
-Setiap backup berisi:
-- `app.tar.gz` — full `~/.hermes/` (kecuali sessions/logs/cache)
-- `extra-0-skills.tar.gz` — skills directory saja
-- `extra-1-memories.tar.gz` — memories (MEMORY.md, USER.md)
-- `extra-2-scripts.tar.gz` — custom scripts
+Repo ini bagian dari sistem backup terpusat di Harnet Panel:
 
-Disimpan max 5 backup terakhir.
+| Repo | Isi | Auto-backup |
+|---|---|---|
+| [vps-web-manager](https://github.com/arkhindi12/vps-web-manager) | Harnet Panel source | ✅ 02:00 |
+| [vps-hermes](https://github.com/arkhindi12/vps-hermes) | Hermes skills + memories | ✅ 02:00 |
+| [vps-9router](https://github.com/arkhindi12/vps-9router) | 9Router VPN app | ✅ 02:00 |
+| [vps-vpn-status](https://github.com/arkhindi12/vps-vpn-status) | VPN status monitor | ✅ 02:00 |
+| [vps-adminvpn-agent](https://github.com/arkhindi12/vps-adminvpn-agent) | Admin VPN agent | ✅ 02:00 |
+| [vps-adminvpn-control](https://github.com/arkhindi12/vps-adminvpn-control) | Admin VPN control | ✅ 02:00 |
+| [vps-winnerlens](https://github.com/arkhindi12/vps-winnerlens) | Winnerlens app | ✅ 02:00 |
+| [vps-mailserver](https://github.com/arkhindi12/vps-mailserver) | Mail server config | ✅ 03:00 |
 
 ---
 
-## 🔗 Related Repos
+## 📞 Info Server
 
-| Repo | Isi |
-|---|---|
-| arkhindi12/vps-web-manager | Harnet Panel (VPS control panel) |
-| arkhindi12/vps-hermes | Hermes skills + memories (this repo) |
-| arkhindi12/vps-9router | 9Router app |
-| arkhindi12/vps-mailserver | Mail server config |
+- **Panel:** https://web.arzastore.com
+- **Hermes via Telegram:** @zaguza
+- **Backup dikelola oleh:** [Harnet Panel](https://web.arzastore.com) — VPS control panel custom berbasis Node.js
